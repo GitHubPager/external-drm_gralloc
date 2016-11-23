@@ -57,8 +57,6 @@ uint32_t get_fourcc_format_for_hal_format(uint32_t hal_format) {
 		return DRM_FORMAT_NV16;
 	case HAL_PIXEL_FORMAT_YCrCb_420_SP:
 		return DRM_FORMAT_NV21;
-	case HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED:
-		return DRM_FORMAT_XBGR8888;
 	default:
 		ALOGI("Unknown HAL Format 0x%x", hal_format);
 		return 0;

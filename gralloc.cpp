@@ -257,6 +257,12 @@ static int drm_mod_alloc_gpu0(alloc_device_t *dev,
 	struct gralloc_drm_bo_t *bo;
 	int size, bpp, err;
 
+        if (format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
+                ALOGV("Convert implementation defined format to ARGB8888 w:%d, h:%d, usage:0x%x",
+                        w, h, usage);
+                format = HAL_PIXEL_FORMAT_RGBA_8888;
+        }
+
 	bpp = gralloc_drm_get_bpp(format);
 	if (!bpp)
 		return -EINVAL;
