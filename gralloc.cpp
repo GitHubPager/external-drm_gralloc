@@ -160,7 +160,7 @@ static int drm_mod_lock_ycbcr(const gralloc_module_t *mod, buffer_handle_t bhand
 {
 	struct gralloc_drm_handle_t *handle;
 	struct gralloc_drm_bo_t *bo;
-	void *ptr;
+	void *ptr = NULL;
 	int err;
 
 	bo = gralloc_drm_bo_from_handle(bhandle);
@@ -169,24 +169,33 @@ static int drm_mod_lock_ycbcr(const gralloc_module_t *mod, buffer_handle_t bhand
 	handle = bo->handle;
 
 	switch(handle->format) {
+	case HAL_PIXEL_FORMAT_YV12:
 	case HAL_PIXEL_FORMAT_YCbCr_420_888:
 		break;
 	default:
 		return -EINVAL;
 	}
 
-	err = gralloc_drm_bo_lock(bo, usage, x, y, w, h, &ptr);
-	if (err)
-		return err;
+	if (usage != 0) {
+		err = gralloc_drm_bo_lock(bo, usage, x, y, w, h, &ptr);
+		if (err)
+			return err;
+	}
+
+	uint32_t pitches[4];
+	uint32_t offsets[4];
+	uint32_t handles[4];
+	gralloc_drm_resolve_format(bhandle, pitches, offsets, handles);
 
 	switch(handle->format) {
+	case HAL_PIXEL_FORMAT_YV12:
 	case HAL_PIXEL_FORMAT_YCbCr_420_888:
 		ycbcr->y = ptr;
-		ycbcr->cb = (uint8_t *)ptr + handle->stride * handle->height;
-		ycbcr->cr = (uint8_t *)ycbcr->cb + 1;
-		ycbcr->ystride = handle->stride;
-		ycbcr->cstride = handle->stride;
-		ycbcr->chroma_step = 2;
+		ycbcr->cb = (uint8_t *)ptr + (offsets[1] - offsets[2]);
+		ycbcr->cr = (uint8_t *)ptr + (offsets[2] - offsets[0]);
+		ycbcr->ystride = pitches[0];
+		ycbcr->cstride = pitches[1];
+		ycbcr->chroma_step = 1;
 		break;
 	default:
 		break;
