@@ -27,6 +27,8 @@
 #include <cutils/native_handle.h>
 #include <system/graphics.h>
 
+#include <cutils/log.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -95,7 +95,8 @@ LOCAL_C_INCLUDES := \
 	vendor/intel/external/android_ia/libdrm \
 	vendor/intel/external/android_ia/libdrm/include/drm
 
-LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/drm_hwcomposer
+LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/hwcomposer/public \
+	-isystem vendor/intel/external/android_ia/hwcomposer/os/android
 
 LOCAL_SHARED_LIBRARIES := \
 	libdrm \
@@ -172,7 +173,8 @@ LOCAL_C_INCLUDES := \
 	vendor/intel/external/android_ia/libdrm \
 	vendor/intel/external/android_ia/libdrm/include/drm
 
-LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/drm_hwcomposer
+LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/hwcomposer/public \
+	-isystem vendor/intel/external/android_ia/hwcomposer/os/android
 
 LOCAL_SHARED_LIBRARIES := \
 	libgralloc_drm \

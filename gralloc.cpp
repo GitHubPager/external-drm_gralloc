@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <map>
 
-#include "drmhwcgralloc.h"
+#include "grallocbufferhandler.h"
 #include "gralloc_drm.h"
 #include "gralloc_drm_priv.h"
 
@@ -54,6 +54,55 @@ static int drm_init(struct drm_module_t *dmod)
 	return err;
 }
 
+static int drm_mod_create_buffer(struct drm_module_t *dmod,
+		int w, int h, int format, int usage,
+		buffer_handle_t *handle, int *stride)
+{
+	struct gralloc_drm_bo_t *bo;
+	int size, bpp, err;
+
+	if (format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
+		ALOGV("Convert implementation defined format to ARGB8888 w:%d, h:%d, usage:0x%x",
+			w, h, usage);
+		format = HAL_PIXEL_FORMAT_RGBA_8888;
+	}
+
+	bpp = gralloc_drm_get_bpp(format);
+	if (!bpp)
+		return -EINVAL;
+
+	bo = gralloc_drm_bo_create(dmod->drm, w, h, format, usage);
+	if (!bo)
+		return -ENOMEM;
+
+	*handle = gralloc_drm_bo_get_handle(bo, stride);
+	/* in pixels */
+	*stride /= bpp;
+
+	all_records.insert(std::make_pair(bo, handle));
+
+	return 0;
+}
+
+static int drm_mod_destroy_buffer(buffer_handle_t handle)
+{
+	struct gralloc_drm_bo_t *bo;
+
+	bo = gralloc_drm_bo_from_handle(handle);
+	if (!bo)
+		return -EINVAL;
+
+	gralloc_drm_bo_decref(bo);
+
+	std::map<gralloc_drm_bo_t *,
+		buffer_handle_t *>::const_iterator it = all_records.find(bo);
+	if (it == all_records.end())
+		return -EINVAL;
+	all_records.erase(it);
+
+	return 0;
+}
+
 static int drm_mod_perform(const struct gralloc_module_t *mod, int op, ...)
 {
 	struct drm_module_t *dmod = (struct drm_module_t *) mod;
@@ -73,31 +122,11 @@ static int drm_mod_perform(const struct gralloc_module_t *mod, int op, ...)
 			err = 0;
 		}
 		break;
-	case static_cast<int>(GRALLOC_MODULE_PERFORM_GET_USAGE):
-		{
-			buffer_handle_t handle = va_arg(args, buffer_handle_t);
-			int *buffer_usage = va_arg(args, int *);
-			gralloc_drm_handle_t *gr_handle = gralloc_drm_handle(handle);
-
-			if (!gr_handle) {
-				ALOGE("could not find gralloc drm handle");
-				err = -EINVAL;
-				break;
-			}
-
-			if (gr_handle->usage & GRALLOC_USAGE_PROTECTED) {
-				*buffer_usage = 0;
-			} else {
-				*buffer_usage = gr_handle->usage;
-			}
-			err = 0;
-		}
-		break;
 	case static_cast<int>(GRALLOC_MODULE_PERFORM_DRM_IMPORT):
 		{
 			int fd = va_arg(args, int);
 			buffer_handle_t handle = va_arg(args, buffer_handle_t);
-			hwc_drm_bo_t *hwc_bo = va_arg(args, hwc_drm_bo_t *);
+			struct HwcBuffer *hwc_bo = va_arg(args, struct HwcBuffer *);
 
 			gralloc_drm_handle_t *gr_handle = gralloc_drm_handle(handle);
 
@@ -107,11 +136,28 @@ static int drm_mod_perform(const struct gralloc_module_t *mod, int op, ...)
 				break;
 			}
 
-			/* call driver to resolve hwc_drm_bo_t */
+			/* call driver to resolve HwcBuffer */
 			if (dmod->drm->drv->resolve_buffer)
 				err = dmod->drm->drv->resolve_buffer(dmod->drm->drv, fd, gr_handle, hwc_bo);
 			else
 				err = -EINVAL;
+		}
+		break;
+	case static_cast<int>(GRALLOC_MODULE_PERFORM_CREATE_BUFFER):
+		{
+			uint32_t width = va_arg(args, uint32_t);
+			uint32_t height = va_arg(args, uint32_t);
+			int format = va_arg(args, int);
+			int usage = va_arg(args, int);
+			buffer_handle_t* handle = va_arg(args, buffer_handle_t*);
+			int stride;
+			err = drm_mod_create_buffer(dmod, width, height, format, usage, handle, &stride);
+		}
+		break;
+	case static_cast<int>(GRALLOC_MODULE_PERFORM_DESTROY_BUFFER):
+		{
+			buffer_handle_t handle = va_arg(args, buffer_handle_t);
+			err = drm_mod_destroy_buffer(handle);
 		}
 		break;
 	default:
@@ -229,24 +275,9 @@ static int drm_mod_close_gpu0(struct hw_device_t *dev)
 	return 0;
 }
 
-static int drm_mod_free_gpu0(alloc_device_t *dev, buffer_handle_t handle)
+static int drm_mod_free_gpu0(alloc_device_t */*dev*/, buffer_handle_t handle)
 {
-	struct drm_module_t *dmod = (struct drm_module_t *) dev->common.module;
-	struct gralloc_drm_bo_t *bo;
-
-	bo = gralloc_drm_bo_from_handle(handle);
-	if (!bo)
-		return -EINVAL;
-
-	gralloc_drm_bo_decref(bo);
-
-	std::map<gralloc_drm_bo_t *,
-		buffer_handle_t *>::const_iterator it = all_records.find(bo);
-	if (it == all_records.end())
-		return -EINVAL;
-	all_records.erase(it);
-
-	return 0;
+	return drm_mod_destroy_buffer(handle);
 }
 
 static int drm_mod_alloc_gpu0(alloc_device_t *dev,
@@ -254,30 +285,7 @@ static int drm_mod_alloc_gpu0(alloc_device_t *dev,
 		buffer_handle_t *handle, int *stride)
 {
 	struct drm_module_t *dmod = (struct drm_module_t *) dev->common.module;
-	struct gralloc_drm_bo_t *bo;
-	int size, bpp, err;
-
-        if (format == HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED) {
-                ALOGV("Convert implementation defined format to ARGB8888 w:%d, h:%d, usage:0x%x",
-                        w, h, usage);
-                format = HAL_PIXEL_FORMAT_RGBA_8888;
-        }
-
-	bpp = gralloc_drm_get_bpp(format);
-	if (!bpp)
-		return -EINVAL;
-
-	bo = gralloc_drm_bo_create(dmod->drm, w, h, format, usage);
-	if (!bo)
-		return -ENOMEM;
-
-	*handle = gralloc_drm_bo_get_handle(bo, stride);
-	/* in pixels */
-	*stride /= bpp;
-
-	all_records.insert(std::make_pair(bo, handle));
-
-	return 0;
+	return drm_mod_create_buffer(dmod, w, h, format, usage, handle, stride);
 }
 
 static void drm_mod_dump_gpu0(struct alloc_device_t * /*dev*/, char *buff, int buff_len)

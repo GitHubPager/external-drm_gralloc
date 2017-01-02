@@ -28,7 +28,7 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 
-#include "drmhwcgralloc.h"
+#include "hwcbuffer.h"
 #include "gralloc_drm_handle.h"
 
 #ifdef __cplusplus
@@ -74,11 +74,11 @@ struct gralloc_drm_drv_t {
 		     struct gralloc_drm_bo_t *bo,
 		     uint32_t *pitches, uint32_t *offsets, uint32_t *handles);
 
-	/* resolve hwc_drm_bo_t from given gralloc_drm_handle_t */
+	/* resolve HwcBuffer from given gralloc_drm_handle_t */
 	int (*resolve_buffer)(struct gralloc_drm_drv_t *drv,
 			int fd,
 			struct gralloc_drm_handle_t *handle,
-			hwc_drm_bo_t *hwc_bo);
+			struct HwcBuffer *hwc_bo);
 };
 
 struct gralloc_drm_bo_t {
@@ -86,7 +86,7 @@ struct gralloc_drm_bo_t {
 	struct gralloc_drm_handle_t *handle;
 
 	int imported;  /* the handle is from a remote proces when true */
-	int fb_handle; /* the GEM handle of the bo */
+	uint32_t fb_handle; /* the GEM handle of the bo */
 	int fb_id;     /* the fb id */
 
 	int lock_count;

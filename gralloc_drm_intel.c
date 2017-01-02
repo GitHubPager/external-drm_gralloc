@@ -158,13 +158,13 @@ static void intel_resolve_format(struct gralloc_drm_drv_t *drv,
 static int intel_resolve_buffer(struct gralloc_drm_drv_t *drv,
                                int fd,
                                struct gralloc_drm_handle_t *handle,
-                               hwc_drm_bo_t *hwc_bo)
+			       struct HwcBuffer *hwc_bo)
 {
 	struct intel_buffer *ib = (struct intel_buffer *) handle->data;
 	uint32_t aligned_width = handle->width;
 	uint32_t aligned_height = handle->height;
 	struct intel_info *info = (struct intel_info *) drv;
-	memset(hwc_bo, 0, sizeof(hwc_drm_bo_t));
+	memset(hwc_bo, 0, sizeof(struct HwcBuffer));
 
 	int err = drmPrimeFDToHandle(fd, handle->prime_fd, &ib->base.fb_handle);
 	if (err) {
@@ -178,8 +178,6 @@ static int intel_resolve_buffer(struct gralloc_drm_drv_t *drv,
 	if (handle->usage & GRALLOC_USAGE_CURSOR)
 		hwc_bo->format = DRM_FORMAT_ARGB8888;
 
-	hwc_bo->fb_id = 0;
-
 	calculate_aligned_geometry(hwc_bo->format, handle->usage,
 				info->cursor_width, info->cursor_height,
 				&aligned_width, &aligned_height);
@@ -189,6 +187,12 @@ static int intel_resolve_buffer(struct gralloc_drm_drv_t *drv,
 
 	hwc_bo->width = aligned_width;
 	hwc_bo->height = aligned_height;
+        hwc_bo->prime_fd = handle->prime_fd;
+	if (handle->usage & GRALLOC_USAGE_PROTECTED) {
+		hwc_bo->usage = 0;
+	} else {
+		hwc_bo->usage = handle->usage;
+	}
 
 	return 0;
 }
