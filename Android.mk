@@ -92,10 +92,10 @@ LOCAL_SRC_FILES := \
 	util.c
 
 LOCAL_C_INCLUDES := \
-	external/libdrm \
-	external/libdrm/include/drm
+	vendor/intel/external/android_ia/libdrm \
+	vendor/intel/external/android_ia/libdrm/include/drm
 
-LOCAL_CFLAGS += -isystem external/drm_hwcomposer
+LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/drm_hwcomposer
 
 LOCAL_SHARED_LIBRARIES := \
 	libdrm \
@@ -106,21 +106,21 @@ LOCAL_SHARED_LIBRARIES := \
 
 ifneq ($(filter $(intel_drivers), $(DRM_GPU_DRIVERS)),)
 LOCAL_SRC_FILES += gralloc_drm_intel.c
-LOCAL_C_INCLUDES += external/libdrm/intel
+LOCAL_C_INCLUDES += vendor/intel/external/android_ia/libdrm/intel
 LOCAL_CFLAGS += -DENABLE_INTEL
 LOCAL_SHARED_LIBRARIES += libdrm_intel
 endif
 
 ifneq ($(filter $(radeon_drivers), $(DRM_GPU_DRIVERS)),)
 LOCAL_SRC_FILES += gralloc_drm_radeon.c
-LOCAL_C_INCLUDES += external/libdrm/radeon
+LOCAL_C_INCLUDES += vendor/intel/external/android_ia/libdrm/radeon
 LOCAL_CFLAGS += -DENABLE_RADEON
 LOCAL_SHARED_LIBRARIES += libdrm_radeon
 endif
 
 ifneq ($(filter $(nouveau_drivers), $(DRM_GPU_DRIVERS)),)
 LOCAL_SRC_FILES += gralloc_drm_nouveau.c
-LOCAL_C_INCLUDES += external/libdrm/nouveau
+LOCAL_C_INCLUDES += vendor/intel/external/android_ia/libdrm/nouveau
 LOCAL_CFLAGS += -DENABLE_NOUVEAU
 LOCAL_SHARED_LIBRARIES += libdrm_nouveau
 endif
@@ -169,10 +169,10 @@ LOCAL_SRC_FILES := \
 	gralloc.cpp
 
 LOCAL_C_INCLUDES := \
-	external/libdrm \
-	external/libdrm/include/drm
+	vendor/intel/external/android_ia/libdrm \
+	vendor/intel/external/android_ia/libdrm/include/drm
 
-LOCAL_CFLAGS += -isystem external/drm_hwcomposer
+LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/drm_hwcomposer
 
 LOCAL_SHARED_LIBRARIES := \
 	libgralloc_drm \
