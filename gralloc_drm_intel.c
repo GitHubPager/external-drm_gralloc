@@ -158,14 +158,21 @@ static void intel_resolve_format(struct gralloc_drm_drv_t *drv,
 static int intel_resolve_buffer(struct gralloc_drm_drv_t *drv,
                                int fd,
                                struct gralloc_drm_handle_t *handle,
-			       struct HwcBuffer *hwc_bo)
+#ifdef DRM_HWCOMPOSER
+				hwc_drm_bo_t *hwc_bo)
+#else
+	                        struct HwcBuffer *hwc_bo)
+#endif
 {
 	struct intel_buffer *ib = (struct intel_buffer *) handle->data;
 	uint32_t aligned_width = handle->width;
 	uint32_t aligned_height = handle->height;
 	struct intel_info *info = (struct intel_info *) drv;
+#ifdef DRM_HWCOMPOSER
+	memset(hwc_bo, 0, sizeof(hwc_drm_bo_t));
+#else
 	memset(hwc_bo, 0, sizeof(struct HwcBuffer));
-
+#endif
 	int err = drmPrimeFDToHandle(fd, handle->prime_fd, &ib->base.fb_handle);
 	if (err) {
 		ALOGE("failed to import prime fd %d ret=%s",
@@ -177,7 +184,9 @@ static int intel_resolve_buffer(struct gralloc_drm_drv_t *drv,
 	// We support DRM_FORMAT_ARGB8888 for cursor.
 	if (handle->usage & GRALLOC_USAGE_CURSOR)
 		hwc_bo->format = DRM_FORMAT_ARGB8888;
-
+#ifdef DRM_HWCOMPOSER
+	hwc_bo->fb_id = 0;
+#endif
 	calculate_aligned_geometry(hwc_bo->format, handle->usage,
 				info->cursor_width, info->cursor_height,
 				&aligned_width, &aligned_height);
@@ -187,13 +196,14 @@ static int intel_resolve_buffer(struct gralloc_drm_drv_t *drv,
 
 	hwc_bo->width = aligned_width;
 	hwc_bo->height = aligned_height;
+#ifndef DRM_HWCOMPOSER
         hwc_bo->prime_fd = handle->prime_fd;
 	if (handle->usage & GRALLOC_USAGE_PROTECTED) {
 		hwc_bo->usage = 0;
 	} else {
 		hwc_bo->usage = handle->usage;
 	}
-
+#endif
 	return 0;
 }
 

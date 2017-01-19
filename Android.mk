@@ -95,8 +95,13 @@ LOCAL_C_INCLUDES := \
 	vendor/intel/external/android_ia/libdrm \
 	vendor/intel/external/android_ia/libdrm/include/drm
 
+ifeq ($(strip $(BOARD_USES_DRM_HWCOMPOSER)),true)
+LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/drm_hwcomposer
+LOCAL_CFLAGS += -DDRM_HWCOMPOSER
+else
 LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/hwcomposer/public \
 	-isystem vendor/intel/external/android_ia/hwcomposer/os/android
+endif
 
 LOCAL_SHARED_LIBRARIES := \
 	libdrm \
@@ -173,8 +178,13 @@ LOCAL_C_INCLUDES := \
 	vendor/intel/external/android_ia/libdrm \
 	vendor/intel/external/android_ia/libdrm/include/drm
 
+ifeq ($(strip $(BOARD_USES_DRM_HWCOMPOSER)),true)
+LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/drm_hwcomposer
+LOCAL_CFLAGS += -DDRM_HWCOMPOSER
+else
 LOCAL_CFLAGS += -isystem vendor/intel/external/android_ia/hwcomposer/public \
 	-isystem vendor/intel/external/android_ia/hwcomposer/os/android
+endif
 
 LOCAL_SHARED_LIBRARIES := \
 	libgralloc_drm \
