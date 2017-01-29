@@ -55,6 +55,10 @@ ifeq ($(ENABLE_FLINK_SUPPORT),1)
 LOCAL_CFLAGS += -DUSE_NAME
 endif
 
+ifeq ($(strip $(BOARD_DISABLE_EXPLICIT_SYNC)),true)
+LOCAL_CPPFLAGS += -DDISABLE_EXPLICIT_SYNC
+endif
+
 ifneq ($(strip $(DRM_GPU_DRIVERS)),)
 
 LOCAL_PATH := $(call my-dir)

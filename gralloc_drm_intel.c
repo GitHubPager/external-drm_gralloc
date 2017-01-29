@@ -197,7 +197,7 @@ static drm_intel_bo *alloc_ibo(struct intel_info *info,
 		const struct gralloc_drm_handle_t *handle,
 		uint32_t *tiling, unsigned long *stride)
 {
-	drm_intel_bo *ibo;
+	drm_intel_bo *ibo = 0;
 	const char *name;
 	uint32_t aligned_width, aligned_height, bpp, fourcc_format;
 	unsigned long flags;
@@ -344,7 +344,9 @@ static struct gralloc_drm_bo_t *intel_alloc(struct gralloc_drm_drv_t *drv,
 			free(ib);
 			return NULL;
 		}
-
+#ifndef DISABLE_EXPLICIT_SYNC
+	        drm_intel_gem_bo_disable_implicit_sync(ib->ibo);
+#endif
                 handle->stride = stride;
 #ifdef USE_NAME
                 int r = drm_intel_bo_flink(ib->ibo, (uint32_t *) &handle->name));
