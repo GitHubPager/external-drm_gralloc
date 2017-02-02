@@ -189,10 +189,9 @@ static int drm_mod_lock_ycbcr(const gralloc_module_t *mod, buffer_handle_t bhand
 
 	switch(handle->format) {
 	case HAL_PIXEL_FORMAT_YV12:
-	case HAL_PIXEL_FORMAT_YCbCr_420_888:
 		ycbcr->y = ptr;
-		ycbcr->cb = (uint8_t *)ptr + (offsets[1] - offsets[2]);
-		ycbcr->cr = (uint8_t *)ptr + (offsets[2] - offsets[0]);
+		ycbcr->cb = (uint8_t *)ptr + offsets[1];
+		ycbcr->cr = (uint8_t *)ptr + offsets[2];
 		ycbcr->ystride = pitches[0];
 		ycbcr->cstride = pitches[1];
 		ycbcr->chroma_step = 1;
